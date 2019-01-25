@@ -1,19 +1,20 @@
-#include "SG14_test.h"
+#include <slot_map/slot_map.h>
 
 #include <algorithm>
 #include <assert.h>
 #include <deque>
 #include <forward_list>
+#include <gtest/gtest.h>
 #include <inttypes.h>
 #include <iterator>
 #include <list>
 #include <memory>
 #include <random>
-#include <slot_map/slot_map.h>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
+namespace {
 namespace TestKey {
 struct key_16_8_t {
 	uint16_t index;
@@ -163,7 +164,7 @@ struct Monad<std::unique_ptr<T_>> {
 };
 
 template <class T, class Key, template <class...> class Container>
-void print_slot_map(const stdext::slot_map<T, Key, Container>& sm) {
+void print_slot_map(const fea::slot_map<T, Key, Container>& sm) {
 	printf("%d slots:", (int)sm.slots_.size());
 	for (auto&& slot : sm.slots_) {
 		printf(" %d/%d", (int)slot.first, (int)slot.second);
@@ -245,7 +246,7 @@ static void BasicTests(T t1, T t2) {
 
 template <class SM, class TGen>
 static void FullContainerStressTest(TGen t) {
-	const int total = 1000;
+	const int total = 100;
 	SM sm;
 	std::vector<typename SM::key_type> keys;
 	for (int i = 0; i < total; ++i) {
@@ -270,7 +271,7 @@ static void FullContainerStressTest(TGen t) {
 
 template <class SM, class TGen>
 static void InsertEraseStressTest(TGen t) {
-	const int total = 1000;
+	const int total = 100;
 	SM sm;
 	std::vector<typename SM::key_type> valid_keys;
 	std::vector<typename SM::key_type> expired_keys;
@@ -349,7 +350,7 @@ static void EraseRangeTest() {
 	assert(test(10, 1, 10));
 	assert(test(10, 0, 9));
 	assert(test(10, 1, 9));
-	for (int N : { 2, 10, 100 }) {
+	for (int N : { 2, 4, 6 }) {
 		for (int i = 0; i < N; ++i) {
 			for (int j = i; j < N; ++j) {
 				assert(test(N, i, j));
@@ -404,7 +405,7 @@ void VerifyCapacityExists(Bool expected) {
 
 static void TypedefTests() {
 	if (true) {
-		using SM = stdext::slot_map<int>;
+		using SM = fea::slot_map<int>;
 		static_assert(std::is_same<typename SM::key_type,
 							  std::pair<unsigned, unsigned>>::value,
 				"");
@@ -443,7 +444,7 @@ static void TypedefTests() {
 		static_assert(std::is_same<typename SM::value_type, int>::value, "");
 	}
 	if (true) {
-		using SM = stdext::slot_map<bool>;
+		using SM = fea::slot_map<bool>;
 		static_assert(std::is_same<typename SM::key_type,
 							  std::pair<unsigned, unsigned>>::value,
 				"");
@@ -486,7 +487,7 @@ static void TypedefTests() {
 		static_assert(std::is_same<typename SM::value_type, bool>::value, "");
 	}
 	if (true) {
-		using SM = stdext::slot_map<double, TestKey::key_16_8_t>;
+		using SM = fea::slot_map<double, TestKey::key_16_8_t>;
 		static_assert(
 				std::is_same<typename SM::key_type, TestKey::key_16_8_t>::value,
 				"");
@@ -527,7 +528,7 @@ static void TypedefTests() {
 		static_assert(std::is_same<typename SM::value_type, double>::value, "");
 	}
 	if (true) {
-		using SM = stdext::slot_map<int, std::pair<char, int>,
+		using SM = fea::slot_map<int, std::pair<char, int>,
 				TestContainer::Vector>;
 		static_assert(std::is_same<typename SM::key_type,
 							  std::pair<char, int>>::value,
@@ -570,7 +571,7 @@ static void TypedefTests() {
 	}
 #if __cplusplus >= 201703L
 	if (true) {
-		using SM = stdext::slot_map<double, TestKey::key_11_5_t>;
+		using SM = fea::slot_map<double, TestKey::key_11_5_t>;
 		static_assert(
 				std::is_same<typename SM::key_type, TestKey::key_11_5_t>::value,
 				"");
@@ -614,17 +615,17 @@ static void TypedefTests() {
 }
 
 void BoundsCheckingTest() {
-	stdext::slot_map<int> sm;
+	fea::slot_map<int> sm;
 	const auto& csm = sm;
 
 	sm.emplace(1);
-	stdext::slot_map<int>::key_type k = sm.emplace(2);
+	fea::slot_map<int>::key_type k = sm.emplace(2);
 	sm.clear();
 
-	stdext::slot_map<int>::iterator it = sm.find(k);
+	fea::slot_map<int>::iterator it = sm.find(k);
 	assert(it == sm.end());
 
-	stdext::slot_map<int>::const_iterator cit = csm.find(k);
+	fea::slot_map<int>::const_iterator cit = csm.find(k);
 	assert(cit == sm.end());
 }
 
@@ -669,12 +670,12 @@ static void KeyFindTest() {
 	}
 }
 
-void sg14_test::slot_map_test() {
+void slot_map_test() {
 	TypedefTests();
 	BoundsCheckingTest();
 
 	// Test the most basic slot_map.
-	using slot_map_1 = stdext::slot_map<int>;
+	using slot_map_1 = fea::slot_map<int>;
 	BasicTests<slot_map_1>(42, 37);
 	FullContainerStressTest<slot_map_1>([]() { return 1; });
 	InsertEraseStressTest<slot_map_1>([i = 3]() mutable { return ++i; });
@@ -685,7 +686,7 @@ void sg14_test::slot_map_test() {
 	KeyFindTest<slot_map_1>();
 
 	// Test slot_map with a custom key type (C++14 destructuring).
-	using slot_map_2 = stdext::slot_map<unsigned long, TestKey::key_16_8_t>;
+	using slot_map_2 = fea::slot_map<unsigned long, TestKey::key_16_8_t>;
 	BasicTests<slot_map_2>(425, 375);
 	FullContainerStressTest<slot_map_2>([]() { return 42; });
 	InsertEraseStressTest<slot_map_2>([i = 5]() mutable { return ++i; });
@@ -697,7 +698,7 @@ void sg14_test::slot_map_test() {
 
 #if __cplusplus >= 201703L
 	// Test slot_map with a custom key type (C++17 destructuring).
-	using slot_map_3 = stdext::slot_map<int, TestKey::key_11_5_t>;
+	using slot_map_3 = fea::slot_map<int, TestKey::key_11_5_t>;
 	BasicTests<slot_map_3>(42, 37);
 	FullContainerStressTest<slot_map_3>([]() { return 42; });
 	InsertEraseStressTest<slot_map_3>([i = 3]() mutable { return ++i; });
@@ -711,7 +712,7 @@ void sg14_test::slot_map_test() {
 	// Test slot_map with a custom (but standard and random-access) container
 	// type.
 	using slot_map_4
-			= stdext::slot_map<int, std::pair<unsigned, unsigned>, std::deque>;
+			= fea::slot_map<int, std::pair<unsigned, unsigned>, std::deque>;
 	BasicTests<slot_map_4>(415, 315);
 	FullContainerStressTest<slot_map_4>([]() { return 37; });
 	InsertEraseStressTest<slot_map_4>([i = 7]() mutable { return ++i; });
@@ -722,7 +723,7 @@ void sg14_test::slot_map_test() {
 	KeyFindTest<slot_map_4>();
 
 	// Test slot_map with a custom (non-standard, random-access) container type.
-	using slot_map_5 = stdext::slot_map<int, std::pair<unsigned, unsigned>,
+	using slot_map_5 = fea::slot_map<int, std::pair<unsigned, unsigned>,
 			TestContainer::Vector>;
 	BasicTests<slot_map_5>(415, 315);
 	FullContainerStressTest<slot_map_5>([]() { return 37; });
@@ -736,7 +737,7 @@ void sg14_test::slot_map_test() {
 	// Test slot_map with a custom (standard, bidirectional-access) container
 	// type.
 	using slot_map_6
-			= stdext::slot_map<int, std::pair<unsigned, unsigned>, std::list>;
+			= fea::slot_map<int, std::pair<unsigned, unsigned>, std::list>;
 	BasicTests<slot_map_6>(415, 315);
 	FullContainerStressTest<slot_map_6>([]() { return 37; });
 	InsertEraseStressTest<slot_map_6>([i = 7]() mutable { return ++i; });
@@ -749,7 +750,7 @@ void sg14_test::slot_map_test() {
 	// Test slot_map with a move-only value_type.
 	// Sadly, standard containers do not propagate move-only-ness, so we must
 	// use our custom Vector instead.
-	using slot_map_7 = stdext::slot_map<std::unique_ptr<int>,
+	using slot_map_7 = fea::slot_map<std::unique_ptr<int>,
 			std::pair<unsigned, int>, TestContainer::Vector>;
 	static_assert(std::is_move_constructible<slot_map_7>::value, "");
 	static_assert(std::is_move_assignable<slot_map_7>::value, "");
@@ -765,6 +766,10 @@ void sg14_test::slot_map_test() {
 	ReserveTest<slot_map_7>();
 	VerifyCapacityExists<slot_map_7>(false);
 	KeyFindTest<slot_map_7>();
+}
+
+TEST(slot_map, sg14_tests) {
+	slot_map_test();
 }
 
 #if defined(__cpp_concepts)
@@ -808,9 +813,4 @@ static_assert(SlotMapContainer<std::list>);
 static_assert(not SlotMapContainer<std::forward_list>);
 static_assert(not SlotMapContainer<std::pair>);
 #endif // defined(__cpp_concepts)
-
-#ifdef TEST_MAIN
-int main() {
-	sg14_test::slot_map_test();
-}
-#endif
+} // namespace
