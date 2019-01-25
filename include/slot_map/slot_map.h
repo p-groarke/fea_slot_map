@@ -115,6 +115,241 @@ class slot_map {
 	using slot_iterator = typename Container<Key>::iterator;
 
 public:
+	template <class It>
+	struct slot_map_const_iterator {
+		using iterator_category =
+				typename std::iterator_traits<It>::iterator_category;
+		using value_type = typename std::iterator_traits<It>::value_type;
+		using difference_type =
+				typename std::iterator_traits<It>::difference_type;
+		using pointer = typename std::iterator_traits<It>::pointer;
+		using reference = typename std::iterator_traits<It>::reference;
+
+		slot_map_const_iterator() = default;
+		~slot_map_const_iterator() = default;
+		slot_map_const_iterator(const slot_map_const_iterator&) = default;
+		slot_map_const_iterator& operator=(const slot_map_const_iterator&)
+				= default;
+
+		slot_map_const_iterator(It it)
+				: _it(it) {
+		}
+		template <class Other>
+		slot_map_const_iterator(const slot_map_const_iterator<Other>& o)
+				: _it(o.wrapped()) {
+		}
+		template <class Other>
+		slot_map_const_iterator& operator=(
+				const slot_map_const_iterator<Other>& o) {
+			_it = o.wrapped();
+			return *this;
+		}
+
+		It wrapped() const {
+			return _it;
+		}
+
+		reference operator*() const {
+			return *_it;
+		}
+		reference operator[](const difference_type off) const {
+			return _it[off];
+		}
+		pointer operator->() const {
+			return _it.operator->();
+		}
+
+		// pre-increment
+		slot_map_const_iterator operator++() {
+			++_it;
+			return *this;
+		}
+		// post-increment
+		slot_map_const_iterator operator++(int) {
+			slot_map_const_iterator temp = *this;
+			++_it;
+			return temp;
+		}
+
+		// pre-decrement
+		slot_map_const_iterator operator--() {
+			--_it;
+			return *this;
+		}
+		// post-decrement
+		slot_map_const_iterator operator--(int) {
+			slot_map_const_iterator temp = *this;
+			--_it;
+			return *this;
+		}
+
+		slot_map_const_iterator& operator+=(const difference_type off) {
+			_it += off;
+			return *this;
+		}
+		slot_map_const_iterator operator+(const difference_type off) const {
+			return { _it + off };
+		}
+
+		slot_map_const_iterator& operator-=(const difference_type off) {
+			_it -= off;
+			return *this;
+		}
+		slot_map_const_iterator operator-(const difference_type off) const {
+			return { _it - off };
+		}
+		difference_type operator-(const slot_map_const_iterator& rhs) const {
+			return _it - rhs.wrapped();
+		}
+
+		bool operator==(const slot_map_const_iterator& rhs) const {
+			return _it == rhs.wrapped();
+		}
+		bool operator!=(const slot_map_const_iterator& rhs) const {
+			return !(_it == rhs.wrapped());
+		}
+
+		bool operator<(const slot_map_const_iterator& rhs) const {
+			return _it < rhs.wrapped();
+		}
+		bool operator>(const slot_map_const_iterator& rhs) const {
+			return rhs < *this;
+		}
+		bool operator<=(const slot_map_const_iterator& rhs) const {
+			return !(rhs < *this);
+		}
+		bool operator>=(const slot_map_const_iterator& rhs) const {
+			return !(*this < rhs);
+		}
+
+		friend slot_map_const_iterator operator+(
+				const difference_type, slot_map_const_iterator);
+		friend void swap(slot_map_const_iterator&, slot_map_const_iterator&);
+
+	protected:
+		It _it;
+	};
+
+	template <class It>
+	struct slot_map_iterator : public slot_map_const_iterator<It> {
+		using iterator_category =
+				typename std::iterator_traits<It>::iterator_category;
+		using value_type = typename std::iterator_traits<It>::value_type;
+		using difference_type =
+				typename std::iterator_traits<It>::difference_type;
+		using pointer = typename std::iterator_traits<It>::pointer;
+		using reference = typename std::iterator_traits<It>::reference;
+		using _base = slot_map_const_iterator<It>;
+
+		// using slot_map_const_iterator<It>::slot_map_const_iterator;
+		// using slot_map_const_iterator<It>::operator=;
+
+		slot_map_iterator(It it, slot_map& owner)
+				: _base(it)
+				, _owner(owner) {
+		}
+		template <class Other>
+		slot_map_iterator(const slot_map_iterator<Other>& o)
+				: _base(o)
+				, _owner(o.owner()) {
+		}
+		template <class Other>
+		slot_map_iterator& operator=(const slot_map_iterator<Other>& o) {
+			static_cast<_base*>(this)->operator=(o);
+			_owner = o.owner();
+			return *this;
+		}
+
+		// Swap *it and *jt in the underlying container,
+		// but then fix up their keys so they don't appear to move.
+		static constexpr void iter_swap(
+				slot_map_iterator a, slot_map_iterator b) {
+			printf("chose correct iter_swap\n");
+			auto& owner(a.owner()); // Will assert in stl if owners mismatch.
+
+			auto it_value_index = std::distance(owner.begin(), a);
+			auto it = std::next(owner.begin(), it_value_index);
+			auto it_reversemap_iter
+					= std::next(owner.reverse_map_.begin(), it_value_index);
+			auto it_slot_iter
+					= std::next(owner.slots_.begin(), *it_reversemap_iter);
+			auto jt_value_index = std::distance(owner.begin(), b);
+			auto jt = std::next(owner.begin(), jt_value_index);
+			auto jt_reversemap_iter
+					= std::next(owner.reverse_map_.begin(), jt_value_index);
+			auto jt_slot_iter
+					= std::next(owner.slots_.begin(), *jt_reversemap_iter);
+
+			using std::swap;
+			swap(*it, *jt);
+			swap(*it_slot_iter, *jt_slot_iter);
+			swap(*it_reversemap_iter, *jt_reversemap_iter);
+		}
+
+		slot_map& owner() {
+			return _owner.get();
+		}
+
+		reference operator*() const {
+			return const_cast<reference>(_base::operator*());
+		}
+		pointer operator->() const {
+			return const_cast<pointer>(_base::operator->());
+		}
+
+		// pre-increment
+		slot_map_iterator operator++() {
+			++*static_cast<_base*>(this);
+			return *this;
+		}
+		// post-increment
+		slot_map_iterator operator++(int) {
+			slot_map_iterator temp = *this;
+			++temp;
+			return temp;
+		}
+
+		// pre-decrement
+		slot_map_iterator operator--() {
+			--*static_cast<_base*>(this);
+			return *this;
+		}
+		// post-decrement
+		slot_map_iterator operator--(int) {
+			slot_map_iterator temp = *this;
+			--temp;
+			return *this;
+		}
+
+		slot_map_iterator& operator+=(const difference_type off) {
+			*static_cast<_base*>(this) += off;
+			return *this;
+		}
+		slot_map_iterator operator+(const difference_type off) const {
+			slot_map_iterator temp = *this;
+			return temp += off;
+		}
+
+		slot_map_iterator& operator-=(const difference_type off) {
+			*static_cast<_base*>(this) -= off;
+			return *this;
+		}
+		slot_map_iterator operator-(const difference_type off) const {
+			slot_map_iterator temp = *this;
+			return temp -= off;
+		}
+		difference_type operator-(const _base& rhs) const {
+			return *static_cast<const _base*>(this) - rhs;
+		}
+
+		reference operator[](const difference_type off) const {
+			return *(*this + off);
+		}
+
+	private:
+		std::reference_wrapper<slot_map> _owner;
+	};
+
 	using key_type = Key;
 	using mapped_type = T;
 
@@ -123,15 +358,19 @@ public:
 			= decltype(slot_map::get_generation(std::declval<Key>()));
 
 	using container_type = Container<mapped_type>;
+
+	using iterator = slot_map_iterator<typename container_type::iterator>;
+	using const_iterator
+			= slot_map_const_iterator<typename container_type::const_iterator>;
+	using reverse_iterator
+			= slot_map_iterator<typename container_type::reverse_iterator>;
+	using const_reverse_iterator = slot_map_const_iterator<
+			typename container_type::const_reverse_iterator>;
+
 	using reference = typename container_type::reference;
 	using const_reference = typename container_type::const_reference;
 	using pointer = typename container_type::pointer;
 	using const_pointer = typename container_type::const_pointer;
-	using iterator = typename container_type::iterator;
-	using const_iterator = typename container_type::const_iterator;
-	using reverse_iterator = typename container_type::reverse_iterator;
-	using const_reverse_iterator =
-			typename container_type::const_reverse_iterator;
 
 	using size_type = typename container_type::size_type;
 	using value_type = typename container_type::value_type;
@@ -212,7 +451,7 @@ public:
 			return end();
 		}
 		auto value_iter = std::next(values_.begin(), get_index(*slot_iter));
-		return value_iter;
+		return { value_iter, *this };
 	}
 	constexpr const_iterator find(const key_type& key) const {
 		auto slot_index = get_index(key);
@@ -233,7 +472,7 @@ public:
 	constexpr iterator find_unchecked(const key_type& key) {
 		auto slot_iter = std::next(slots_.begin(), get_index(key));
 		auto value_iter = std::next(values_.begin(), get_index(*slot_iter));
-		return value_iter;
+		return { value_iter, *this };
 	}
 	constexpr const_iterator find_unchecked(const key_type& key) const {
 		auto slot_iter = std::next(slots_.begin(), get_index(key));
@@ -244,10 +483,10 @@ public:
 	// All begin() and end() variations have O(1) time and space complexity.
 	//
 	constexpr iterator begin() {
-		return values_.begin();
+		return { values_.begin(), *this };
 	}
 	constexpr iterator end() {
-		return values_.end();
+		return { values_.end(), *this };
 	}
 	constexpr const_iterator begin() const {
 		return values_.begin();
@@ -262,10 +501,10 @@ public:
 		return values_.end();
 	}
 	constexpr reverse_iterator rbegin() {
-		return values_.rbegin();
+		return { values_.rbegin(), *this };
 	}
 	constexpr reverse_iterator rend() {
-		return values_.rend();
+		return { values_.rend(), *this };
 	}
 	constexpr const_reverse_iterator rbegin() const {
 		return values_.rbegin();
@@ -428,16 +667,19 @@ public:
 		return key_type{ slot_index, generation };
 	}
 
-	constexpr Container<mapped_type>& data() & noexcept {
+protected:
+	// These accessors are not part of P0661R2 but are "modernized" versions
+	// of the protected interface of std::priority_queue, std::stack, etc.
+	constexpr Container<mapped_type>& c() & noexcept {
 		return values_;
 	}
-	constexpr const Container<mapped_type>& data() const& noexcept {
+	constexpr const Container<mapped_type>& c() const& noexcept {
 		return values_;
 	}
-	constexpr Container<mapped_type>&& data() && noexcept {
+	constexpr Container<mapped_type>&& c() && noexcept {
 		return std::move(values_);
 	}
-	constexpr const Container<mapped_type>&& data() const&& noexcept {
+	constexpr const Container<mapped_type>&& c() const&& noexcept {
 		return std::move(values_);
 	}
 
@@ -469,7 +711,7 @@ private:
 		this->set_index(*slot_iter, next_available_slot_index_);
 		this->increment_generation(*slot_iter);
 		next_available_slot_index_ = static_cast<key_index_type>(slot_index);
-		return std::next(values_.begin(), value_index);
+		return { std::next(values_.begin(), value_index), *this };
 	}
 
 	Container<key_type> slots_; // high_water_mark() entries

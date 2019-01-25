@@ -426,16 +426,16 @@ static void TypedefTests() {
 		static_assert(
 				std::is_same<typename SM::const_pointer, const int*>::value,
 				"");
-		static_assert(std::is_same<typename SM::iterator,
+		static_assert(!std::is_same<typename SM::iterator,
 							  std::vector<int>::iterator>::value,
 				"");
-		static_assert(std::is_same<typename SM::const_iterator,
+		static_assert(!std::is_same<typename SM::const_iterator,
 							  std::vector<int>::const_iterator>::value,
 				"");
-		static_assert(std::is_same<typename SM::reverse_iterator,
+		static_assert(!std::is_same<typename SM::reverse_iterator,
 							  std::vector<int>::reverse_iterator>::value,
 				"");
-		static_assert(std::is_same<typename SM::const_reverse_iterator,
+		static_assert(!std::is_same<typename SM::const_reverse_iterator,
 							  std::vector<int>::const_reverse_iterator>::value,
 				"");
 		static_assert(std::is_same<typename SM::size_type,
@@ -469,16 +469,16 @@ static void TypedefTests() {
 		static_assert(std::is_same<typename SM::const_pointer,
 							  std::vector<bool>::const_pointer>::value,
 				"");
-		static_assert(std::is_same<typename SM::iterator,
+		static_assert(!std::is_same<typename SM::iterator,
 							  std::vector<bool>::iterator>::value,
 				"");
-		static_assert(std::is_same<typename SM::const_iterator,
+		static_assert(!std::is_same<typename SM::const_iterator,
 							  std::vector<bool>::const_iterator>::value,
 				"");
-		static_assert(std::is_same<typename SM::reverse_iterator,
+		static_assert(!std::is_same<typename SM::reverse_iterator,
 							  std::vector<bool>::reverse_iterator>::value,
 				"");
-		static_assert(std::is_same<typename SM::const_reverse_iterator,
+		static_assert(!std::is_same<typename SM::const_reverse_iterator,
 							  std::vector<bool>::const_reverse_iterator>::value,
 				"");
 		static_assert(std::is_same<typename SM::size_type,
@@ -509,17 +509,17 @@ static void TypedefTests() {
 		static_assert(
 				std::is_same<typename SM::const_pointer, const double*>::value,
 				"");
-		static_assert(std::is_same<typename SM::iterator,
+		static_assert(!std::is_same<typename SM::iterator,
 							  std::vector<double>::iterator>::value,
 				"");
-		static_assert(std::is_same<typename SM::const_iterator,
+		static_assert(!std::is_same<typename SM::const_iterator,
 							  std::vector<double>::const_iterator>::value,
 				"");
-		static_assert(std::is_same<typename SM::reverse_iterator,
+		static_assert(!std::is_same<typename SM::reverse_iterator,
 							  std::vector<double>::reverse_iterator>::value,
 				"");
 		static_assert(
-				std::is_same<typename SM::const_reverse_iterator,
+				!std::is_same<typename SM::const_reverse_iterator,
 						std::vector<double>::const_reverse_iterator>::value,
 				"");
 		static_assert(std::is_same<typename SM::size_type,
@@ -549,19 +549,19 @@ static void TypedefTests() {
 		static_assert(
 				std::is_same<typename SM::const_pointer, const int*>::value,
 				"");
-		static_assert(std::is_same<typename SM::iterator,
+		static_assert(!std::is_same<typename SM::iterator,
 							  TestContainer::Vector<int>::iterator>::value,
 				"");
 		static_assert(
-				std::is_same<typename SM::const_iterator,
+				!std::is_same<typename SM::const_iterator,
 						TestContainer::Vector<int>::const_iterator>::value,
 				"");
 		static_assert(
-				std::is_same<typename SM::reverse_iterator,
+				!std::is_same<typename SM::reverse_iterator,
 						TestContainer::Vector<int>::reverse_iterator>::value,
 				"");
 		static_assert(
-				std::is_same<typename SM::const_reverse_iterator,
+				!std::is_same<typename SM::const_reverse_iterator,
 						TestContainer::Vector<int>::const_reverse_iterator>::
 						value,
 				"");
@@ -593,17 +593,17 @@ static void TypedefTests() {
 		static_assert(
 				std::is_same<typename SM::const_pointer, const double*>::value,
 				"");
-		static_assert(std::is_same<typename SM::iterator,
+		static_assert(!std::is_same<typename SM::iterator,
 							  std::vector<double>::iterator>::value,
 				"");
-		static_assert(std::is_same<typename SM::const_iterator,
+		static_assert(!std::is_same<typename SM::const_iterator,
 							  std::vector<double>::const_iterator>::value,
 				"");
-		static_assert(std::is_same<typename SM::reverse_iterator,
+		static_assert(!std::is_same<typename SM::reverse_iterator,
 							  std::vector<double>::reverse_iterator>::value,
 				"");
 		static_assert(
-				std::is_same<typename SM::const_reverse_iterator,
+				!std::is_same<typename SM::const_reverse_iterator,
 						std::vector<double>::const_reverse_iterator>::value,
 				"");
 		static_assert(std::is_same<typename SM::size_type,
