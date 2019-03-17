@@ -119,6 +119,17 @@ if (${BUILD_TESTING})
 	)
 
 	add_dependencies(${TEST_NAME} bench_util_ext)
+
+	if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+		target_compile_options(${TEST_NAME} PRIVATE -Wall -Wextra)
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+		target_compile_options(${TEST_NAME} PRIVATE -Wall -Wextra)
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+		# using Intel C++
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+		target_compile_options(${TEST_NAME} PRIVATE /W4 /WX /Zc:__cplusplus /FAs /permissive-)
+		add_definitions(-DNOMINMAX)
+	endif()
 endif()
 
 
@@ -127,14 +138,11 @@ endif()
 ##
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 	target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Wpedantic -Werror)
-	target_compile_options(${TEST_NAME} PRIVATE -Wall -Wextra)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Wpedantic -Werror)
-	target_compile_options(${TEST_NAME} PRIVATE -Wall -Wextra)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 	# using Intel C++
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	target_compile_options(${PROJECT_NAME} INTERFACE /W4 /WX /Zc:__cplusplus /FAs /permissive-)
-	target_compile_options(${TEST_NAME} PRIVATE /W4 /WX /Zc:__cplusplus /FAs /permissive-)
 	add_definitions(-DNOMINMAX)
 endif()
