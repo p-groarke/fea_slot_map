@@ -56,18 +56,6 @@ template <class Ctr, class SizeType>
 inline void reserve_if_possible(Ctr& ctr, const SizeType& n) {
 	slot_map_detail::reserve_if_possible(ctr, n, priority_tag<1>{});
 }
-
-template <template <class> class Op, class T, class = void>
-struct is_detected : std::false_type {};
-template <template <class> class Op, class T>
-struct is_detected<Op, T, std::void_t<Op<T>>> : std::true_type {};
-
-template <template <class> class Op, class T>
-inline constexpr bool is_detected_v = is_detected<Op, T>::value;
-
-template <class It>
-using has_iter_swap = decltype(
-		std::declval<It>().iter_swap(std::declval<It>(), std::declval<It>()));
 } // namespace slot_map_detail
 
 template <class T, class Key = std::pair<unsigned, unsigned>,
@@ -351,7 +339,7 @@ public:
 		auto slot_iter = std::next(slots_.begin(), next_available_slot_index_);
 		next_available_slot_index_ = this->get_index(*slot_iter);
 		this->set_index(*slot_iter, value_pos);
-		this->increment_generation(*slot_iter);
+		// this->increment_generation(*slot_iter);
 		key_type result = *slot_iter;
 		this->set_index(result, std::distance(slots_.begin(), slot_iter));
 		return result;
@@ -388,6 +376,66 @@ public:
 			return 0;
 		}
 		this->erase(iter);
+		return 1;
+	}
+
+	// Each erase_stable() version has an O(n) time complexity per value
+	// and O(1) space complexity.
+	//
+	constexpr iterator erase_stable(iterator pos) {
+		return this->erase_stable(const_iterator(pos));
+	}
+	constexpr iterator erase_stable(const_iterator pos) {
+		auto slot_iter = this->slot_iter_from_value_iter(pos);
+		return erase_slot_iter_stable(slot_iter);
+	}
+	constexpr iterator erase_stable(const_iterator first, const_iterator last) {
+		auto first_index = std::distance(this->cbegin(), first);
+		auto last_index = std::distance(this->cbegin(), last);
+		auto distance = std::distance(first, last);
+
+		auto first_reverse_map_iter
+				= std::next(reverse_map_.begin(), first_index);
+
+		auto last_reverse_map_iter = reverse_map_.end();
+		auto reverse_map_size
+				= std::distance(reverse_map_.cbegin(), reverse_map_.cend());
+
+		if (last_index != reverse_map_size) {
+			last_reverse_map_iter = std::next(reverse_map_.begin(), last_index);
+		}
+
+		// Point remaining slots after erase range back to correct indexes.
+		for (auto it = last_reverse_map_iter; it != reverse_map_.end();
+				it = std::next(it)) {
+			auto idx = *it;
+			auto s_it = std::next(slots_.begin(), idx);
+			this->set_index(*s_it, get_index(*s_it) - distance);
+		}
+
+		// Expire keys.
+		for (auto it = first_reverse_map_iter; it != last_reverse_map_iter;
+				it = std::next(it)) {
+			auto slot_index = *it;
+			auto slot_iter = std::next(slots_.begin(), slot_index);
+
+			this->set_index(*slot_iter, next_available_slot_index_);
+			this->increment_generation(*slot_iter);
+			next_available_slot_index_
+					= static_cast<key_index_type>(slot_index);
+		}
+
+		values_.erase(first, last);
+		reverse_map_.erase(first_reverse_map_iter, last_reverse_map_iter);
+		return std::next(this->begin(), first_index);
+	}
+
+	constexpr size_type erase_stable(const key_type& key) {
+		auto iter = this->find(key);
+		if (iter == this->end()) {
+			return 0;
+		}
+		this->erase_stable(iter);
 		return 1;
 	}
 
@@ -519,6 +567,30 @@ private:
 		return std::next(values_.begin(), value_index);
 	}
 
+	constexpr iterator erase_slot_iter_stable(slot_iterator slot_iter) {
+		auto slot_index = std::distance(slots_.begin(), slot_iter);
+		auto value_index = get_index(*slot_iter);
+		auto value_iter = std::next(values_.begin(), value_index);
+		auto reverse_map_iter = std::next(reverse_map_.begin(), value_index);
+
+		for (auto it = std::next(reverse_map_iter); it != reverse_map_.end();
+				it = std::next(it)) {
+			auto idx = *it;
+			auto s_it = std::next(slots_.begin(), idx);
+			this->set_index(*s_it, get_index(*s_it) - 1);
+		}
+
+		values_.erase(value_iter);
+		reverse_map_.erase(reverse_map_iter);
+
+
+		// Expire this key.
+		this->set_index(*slot_iter, next_available_slot_index_);
+		this->increment_generation(*slot_iter);
+		next_available_slot_index_ = static_cast<key_index_type>(slot_index);
+		return std::next(values_.begin(), value_index);
+	}
+
 	Container<key_type> slots_; // high_water_mark() entries
 	Container<key_index_type> reverse_map_; // exactly size() entries
 	Container<mapped_type> values_; // exactly size() entries
@@ -530,33 +602,4 @@ constexpr void swap(
 		slot_map<T, Key, Container>& lhs, slot_map<T, Key, Container>& rhs) {
 	lhs.swap(rhs);
 }
-
-// const_iterator
-template <class T, class Key, template <class...> class Container>
-typename slot_map<T, Key, Container>::const_iterator operator+(
-		const typename slot_map<T, Key,
-				Container>::const_iterator::difference_type off,
-		typename slot_map<T, Key, Container>::const_iterator it) {
-	return it += off;
-}
-template <class T, class Key, template <class...> class Container>
-void swap(typename slot_map<T, Key, Container>::const_iterator& lhs,
-		typename slot_map<T, Key, Container>::const_iterator& rhs) {
-	using std::swap;
-	swap(lhs, rhs);
-}
-
 } // namespace fea
-
-// Requires an iter_swap proposal.
-namespace std {
-template <class It>
-constexpr void iter_swap(It a, It b) {
-	if constexpr (fea::slot_map_detail::is_detected_v<
-						  fea::slot_map_detail::has_iter_swap, It>) {
-		It::iter_swap(a, b);
-	} else {
-		std::iter_swap<It, It>(a, b);
-	}
-}
-} // namespace std

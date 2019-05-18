@@ -1,8 +1,7 @@
-#include <slot_map/slot_map.h>
-
 #include <algorithm>
 #include <assert.h>
 #include <deque>
+#include <fea_slot_map/fea_slot_map.hpp>
 #include <forward_list>
 #include <gtest/gtest.h>
 #include <inttypes.h>
