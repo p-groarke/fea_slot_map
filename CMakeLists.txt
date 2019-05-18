@@ -24,7 +24,7 @@ foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
 endforeach(OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
 
 
-file(GLOB_RECURSE HEADER_FILES "${PROJECT_SOURCE_DIR}/include/slot_map/*.h")
+file(GLOB_RECURSE HEADER_FILES "${PROJECT_SOURCE_DIR}/include/*.h")
 add_library(${PROJECT_NAME} INTERFACE)
 target_sources(${PROJECT_NAME} INTERFACE
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -41,39 +41,39 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/.clang-format ${CMAKE_CURRENT_BINARY_
 ##
 # Install Package Configuration
 ##
-set(SLOT_MAP_INSTALL_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/slot_map")
-install(FILES ${HEADER_FILES} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/slot_map")
+set(FEA_SLOT_MAP_INSTALL_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/fea_slot_map")
+install(FILES ${HEADER_FILES} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/fea_slot_map")
 
 write_basic_package_version_file(
-	"${CMAKE_CURRENT_BINARY_DIR}/slot_mapConfigVersion.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/fea_slot_mapConfigVersion.cmake"
 	VERSION ${${PROJECT_NAME}_VERSION}
 	COMPATIBILITY AnyNewerVersion
 )
 
 configure_package_config_file(
-	cmake/slot_mapConfig.cmake.in
-	${SLOT_MAP_INSTALL_CONFIGDIR}/slot_mapConfig.cmake
-	INSTALL_DESTINATION ${SLOT_MAP_INSTALL_CONFIGDIR}
+	cmake/fea_slot_mapConfig.cmake.in
+	${FEA_SLOT_MAP_INSTALL_CONFIGDIR}/fea_slot_mapConfig.cmake
+	INSTALL_DESTINATION ${FEA_SLOT_MAP_INSTALL_CONFIGDIR}
 	PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 	NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 
 install(
 	FILES
-	"${CMAKE_CURRENT_BINARY_DIR}/${SLOT_MAP_INSTALL_CONFIGDIR}/slot_mapConfig.cmake"
-	"${CMAKE_CURRENT_BINARY_DIR}/slot_mapConfigVersion.cmake"
-	DESTINATION ${SLOT_MAP_INSTALL_CONFIGDIR}
+	"${CMAKE_CURRENT_BINARY_DIR}/${FEA_SLOT_MAP_INSTALL_CONFIGDIR}/fea_slot_mapConfig.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/fea_slot_mapConfigVersion.cmake"
+	DESTINATION ${FEA_SLOT_MAP_INSTALL_CONFIGDIR}
 )
 
-install(TARGETS ${PROJECT_NAME} EXPORT slot_mapTargets)
+install(TARGETS ${PROJECT_NAME} EXPORT fea_slot_mapTargets)
 
-export(EXPORT slot_mapTargets
-	FILE "${CMAKE_CURRENT_BINARY_DIR}/slot_mapTargets.cmake"
+export(EXPORT fea_slot_mapTargets
+	FILE "${CMAKE_CURRENT_BINARY_DIR}/fea_slot_mapTargets.cmake"
 )
 
 install(
-	EXPORT slot_mapTargets FILE slot_mapTargets.cmake
-	DESTINATION ${SLOT_MAP_INSTALL_CONFIGDIR}
+	EXPORT fea_slot_mapTargets FILE fea_slot_mapTargets.cmake
+	DESTINATION ${FEA_SLOT_MAP_INSTALL_CONFIGDIR}
 )
 
 export(PACKAGE ${PROJECT_NAME})
